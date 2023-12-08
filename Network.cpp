@@ -125,9 +125,6 @@ bool Network::getData(char *calendarURL, char *data)
         }
 
         data[n++] = 0;
-
-        // If the calendar doesn't contain this string - it's invalid
-        if(strstr(data, "END:VCALENDAR") == NULL) f = 1;
     }
     else
     {
