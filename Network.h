@@ -18,6 +18,7 @@ Distributed as-is; no warranty is given.
 #include "HTTPClient.h"
 #include "WiFi.h"
 #include "WiFiClientSecure.h"
+#include <string.h>
 
 #ifndef NETWORK_H
 #define NETWORK_H
@@ -29,14 +30,10 @@ Distributed as-is; no warranty is given.
 class Network
 {
   public:
-    // Functions we can access in main file
     void begin(char *ssid, char *pass);
     void getTime(char *timeStr, long offset = 0, int timeZone = 0);
-    bool getData(char *calendarURL, char *data);
-
-  private:
-    // Functions called from within our class
-    void setTime();
+    bool getData(char *calendarURL, String& payload);
+    void setTime(int timezoneOffset);
 };
 
 #endif

@@ -14,6 +14,7 @@ If you have any questions about licensing, please contact techsupport@e-radionic
 Distributed as-is; no warranty is given.
 */
 
+#include <string.h>
 #include "Network.h"
 
 // Connect Inkplate to the WiFi
@@ -42,9 +43,6 @@ void Network::begin(char *ssid, char *pass)
         }
     }
     Serial.println(F(" connected"));
-
-    // Find and print internet time, the timezone will be added later
-    setTime();
 }
 
 // Gets time from ntp server
@@ -62,11 +60,8 @@ void Network::getTime(char *timeStr, long offSet, int timeZone)
 }
 
 // Function to get all raw data from the web
-bool Network::getData(char *calendarURL, char *data)
+bool Network::getData(char *calendarURL, String& payload)
 {
-    // Variable to store fail
-    bool f = 0;
-
     // If not connected to WiFi, reconnect wifi
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -94,54 +89,33 @@ bool Network::getData(char *calendarURL, char *data)
 
     // Http object used to make get request
     HTTPClient http;
-    http.getStream().setTimeout(10);
-    http.getStream().flush();
-    http.getStream().setNoDelay(true);
+    http.setTimeout(20000);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
-    // Begin http by passing url to it
-    http.begin(calendarURL);
+    if (http.begin(calendarURL)) {
+      int httpCode = http.GET();
 
-    delay(300);
+      if (httpCode != 200) {
+        Serial.println("Failed request. HTTP response:");
+        Serial.println(httpCode);
+        http.end();
 
-    int attempts = 1;
+        return 0;
+      }
 
-    // Download data until it's a verified complete download
-    // Actually do request
-    int httpCode = http.GET();
+      else {
+        payload = http.getString();
+        http.end();
 
-    if (httpCode == 200)
-    {
-        long n = 0;
-
-        long now = millis();
-
-        while (millis() - now < DOWNLOAD_TIMEOUT)
-        {
-            while (http.getStream().available())
-            {
-                data[n++] = http.getStream().read();
-                now = millis();
-            }
-        }
-
-        data[n++] = 0;
-    }
-    else
-    {
-        // In case there was another HTTP code, break from the function
-        Serial.print("HTTP Code: ");
-        Serial.print(httpCode);
-        f = 1;
+        return 1;
+      }
     }
 
-    // end http
-    http.end();
-
-    return !f;
+    return 0;
 }
 
 // Find internet time
-void Network::setTime()
+void Network::setTime(int timezoneOffset)
 {
     // Used for setting correct time
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -156,6 +130,8 @@ void Network::setTime()
         nowSecs = time(nullptr);
     }
     Serial.println();
+
+    nowSecs += timezoneOffset * 3600;
 
     // Used to store time info
     struct tm timeinfo;
