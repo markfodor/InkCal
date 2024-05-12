@@ -121,10 +121,10 @@ void Network::setTimeInfo(int timezoneOffset)
     Serial.print(asctime(&timeinfo));
 }
 
-String Network::getDate()
+String Network::getDate(String format)
 {
     char dateStr[20];
-    snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
+    snprintf(dateStr, sizeof(dateStr), format, timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
     return String(dateStr);
 }
 

@@ -144,7 +144,8 @@ void printCalendar()
   // rotate display so the wake button is always up so user can easily refresh
   display.setRotation(-1);
 
-  String date = network.getDate();
+  // TODO move the format to the config
+  String date = network.getDate("%04d-%02d-%02d");
   display.setTextSize(DATE_TEXT_SIZE);
   textWidth = date.length() * CHAR_WIDTH * DATE_TEXT_SIZE;
   textHeight = CHAR_HEIGHT * DATE_TEXT_SIZE;

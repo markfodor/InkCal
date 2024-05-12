@@ -33,7 +33,7 @@ class Network
     void begin(char *ssid, char *pass);
     bool getData(char *calendarURL, String& payload);
     void setTimeInfo(int timezoneOffset);
-    String getDate();
+    String getDate(String format);
     String getTime();
 };
 
