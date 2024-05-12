@@ -1,21 +1,17 @@
 /*
-Network.cpp
+This is a modified version of Network.cpp
+
+Original source:
 Inkplate 6 Arduino library
 David Zovko, Borna Biro, Denis Vajak, Zvonimir Haramustek @ Soldered
 September 24, 2020
 https://github.com/e-radionicacom/Inkplate-6-Arduino-library
-
-For support, please reach over forums: forum.e-radionica.com/en
-For more info about the product, please check: www.inkplate.io
-
-This code is released under the GNU Lesser General Public License v3.0: https://www.gnu.org/licenses/lgpl-3.0.en.html
-Please review the LICENSE file included with this example.
-If you have any questions about licensing, please contact techsupport@e-radionica.com
-Distributed as-is; no warranty is given.
 */
 
 #include <string.h>
 #include "Network.h"
+
+struct tm timeinfo;
 
 // Connect Inkplate to the WiFi
 void Network::begin(char *ssid, char *pass)
@@ -43,20 +39,6 @@ void Network::begin(char *ssid, char *pass)
         }
     }
     Serial.println(F(" connected"));
-}
-
-// Gets time from ntp server
-void Network::getTime(char *timeStr, long offSet, int timeZone)
-{
-    // Get seconds since 1.1.1970. and add timezone
-    time_t nowSecs = time(nullptr) + (long)timeZone * 3600L + offSet;
-
-    // Used to store time
-    struct tm timeinfo;
-    gmtime_r(&nowSecs, &timeinfo);
-
-    // Copies time string into timeStr
-    strcpy(timeStr, asctime(&timeinfo));
 }
 
 // Function to get all raw data from the web
@@ -115,7 +97,7 @@ bool Network::getData(char *calendarURL, String& payload)
 }
 
 // Find internet time
-void Network::setTime(int timezoneOffset)
+void Network::setTimeInfo(int timezoneOffset)
 {
     // Used for setting correct time
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -132,12 +114,23 @@ void Network::setTime(int timezoneOffset)
     Serial.println();
 
     nowSecs += timezoneOffset * 3600;
-
-    // Used to store time info
-    struct tm timeinfo;
     gmtime_r(&nowSecs, &timeinfo);
 
     // Print the current time without adding a timezone
     Serial.print(F("Current time: "));
     Serial.print(asctime(&timeinfo));
+}
+
+String Network::getDate()
+{
+    char dateStr[20];
+    snprintf(dateStr, sizeof(dateStr), "%04d-%02d-%02d", timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
+    return String(dateStr);
+}
+
+String Network::getTime()
+{
+    char timeStr[10];
+    snprintf(timeStr, sizeof(timeStr), "%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min);
+    return String(timeStr);
 }

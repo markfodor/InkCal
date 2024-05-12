@@ -31,9 +31,10 @@ class Network
 {
   public:
     void begin(char *ssid, char *pass);
-    void getTime(char *timeStr, long offset = 0, int timeZone = 0);
     bool getData(char *calendarURL, String& payload);
-    void setTime(int timezoneOffset);
+    void setTimeInfo(int timezoneOffset);
+    String getDate();
+    String getTime();
 };
 
 #endif

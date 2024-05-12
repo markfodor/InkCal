@@ -16,6 +16,13 @@ Inkplate display(INKPLATE_1BIT); // Create object on Inkplate library and set li
 Network network;
 WiFiClientSecure client;
 String payload;
+int currentUiStep = 0;
+
+#define DATE_TEXT_SIZE 2
+#define TITLE_TEXT_SIZE 4 // UI acts all good until up to 6 - it is all the display can fit
+#define CHAR_WIDTH 6 // Define the width of a single character in pixels - Assuming a monospaced font
+#define CHAR_HEIGHT 8 // Assuming a monospaced font
+#define UI_STEP 30
 
 #define MAX_EVENTS 10  // Define the maximum number of events you want to store
 int numEvents = 0; // Initialize the number of events
@@ -23,7 +30,7 @@ int numEvents = 0; // Initialize the number of events
 typedef struct {
     String startTime;    // Start date and time (YYYYMMDDTHHMMSS)
     String endTime;      // End date and time (YYYYMMDDTHHMMSS)
-    String title;   // Summary or title of the event
+    String name;   // Summary or title of the event
     bool isAllDayEvent;
 } calEvent;
 
@@ -33,7 +40,8 @@ int eventNumber = -1;
 // Store int in rtc data, to remain persistent during deep sleep
 RTC_DATA_ATTR int bootCount = 0;
 
-void handleWakeup() {
+void handleWakeup() 
+{
   ++bootCount;
 
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -58,12 +66,13 @@ void handleWakeup() {
   }
 }
 
-void parseEventData(const String& eventData) {
+void parseEventData(const String& eventData) 
+{
     if (numEvents < MAX_EVENTS) {
         // Split the eventData string into tokens using semicolon (;) as delimiter
         int startPos = 0;
         int endPos = eventData.indexOf(';');
-        events[numEvents].title = eventData.substring(startPos, endPos);
+        events[numEvents].name = eventData.substring(startPos, endPos);
         startPos = endPos + 1;
 
         endPos = eventData.indexOf(';', startPos);
@@ -84,7 +93,8 @@ void parseEventData(const String& eventData) {
     }
 }
 
-void processPayload(const String& allEventData) {
+void processPayload(const String& allEventData) 
+{
   int startPos = 0;
   int endPos = allEventData.indexOf('\n');
   while (endPos != -1) {
@@ -95,12 +105,14 @@ void processPayload(const String& allEventData) {
   }
 }
 
-void printEvents() {
+// test function
+void printEvents() 
+{
   for (int i = 0; i < numEvents; i++) {
     Serial.print(F("Event "));
     Serial.println(i + 1);
-    Serial.print(F("Title: "));
-    Serial.println(events[i].title);
+    Serial.print(F("Name: "));
+    Serial.println(events[i].name);
     Serial.print(F("Is All Day Event: "));
     Serial.println(events[i].isAllDayEvent ? "true" : "false");
     Serial.print(F("Start Time: "));
@@ -111,26 +123,77 @@ void printEvents() {
   }
 }
 
-void setup() {
+int getNextUiStep()
+{
+  currentUiStep = currentUiStep + UI_STEP;
+  return currentUiStep;
+}
+
+void printCalendar() 
+{
+  display.begin();        // Init library (you should call this function ONLY ONCE)
+  display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
+
+  // helper lines for UI alignments - params: starting X, starting Y, length, color
+  display.drawFastVLine(E_INK_WIDTH / 2, 0, E_INK_HEIGHT, BLACK);
+  display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
+
+  // these are used during the UI calculations
+  int textWidth, textHeight, x, y;
+
+  // rotate display so the wake button is always up so user can easily refresh
+  display.setRotation(-1);
+
+  String date = network.getDate();
+  display.setTextSize(DATE_TEXT_SIZE);
+  textWidth = date.length() * CHAR_WIDTH * DATE_TEXT_SIZE;
+  textHeight = CHAR_HEIGHT * DATE_TEXT_SIZE;
+  // x and y centered
+  x = (display.width() - textWidth) / 2;
+  y = (display.height() - textHeight) / 2;
+  display.setCursor(x, getNextUiStep());
+  display.println(date);
+
+
+  String allDayEventsString = "All-day events";
+  display.setTextSize(TITLE_TEXT_SIZE);
+  textWidth = allDayEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
+  textHeight = CHAR_HEIGHT * TITLE_TEXT_SIZE;
+  x = (display.width() - textWidth) / 2;
+  display.setCursor(x, getNextUiStep());
+  display.println(allDayEventsString);
+
+
+  String shortEventsString = "Short events";
+  textWidth = shortEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
+  x = (display.width() - textWidth) / 2;
+  display.setCursor(x, y + UI_STEP);
+  display.println(shortEventsString);
+
+
+  display.display(); // Write hello message on the screen
+  delay(50000);       // Wait a little bit
+}
+
+void setup() 
+{
   Serial.begin(115200);
   Serial.println("Setup called");
-
+  
   handleWakeup();
 
   network.begin(ssid, pass);
-  network.setTime(timezoneOffset);
+  network.setTimeInfo(timezoneOffset); // set it after every wakeup so the daylight saving won't cause any problem
 
   Serial.println("Getting data");
   while (!network.getData(calendarURL, payload)) {
     Serial.print('.');
     delay(1000);
   }
-  Serial.print("\n");
-  Serial.println("payload:");
-  //Serial.print(payload);
 
   processPayload(payload);
   printEvents();
+  printCalendar();
 
   Serial.println("Going to sleep");
   delay(100);
