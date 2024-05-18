@@ -25,17 +25,17 @@ int currentUiStep = 0;
 #define UI_STEP 30
 
 #define MAX_EVENTS 10  // Define the maximum number of events you want to store
-int numEvents = 0; // Initialize the number of events
+
 
 typedef struct {
-    String startTime;    // Start date and time (YYYYMMDDTHHMMSS)
-    String endTime;      // End date and time (YYYYMMDDTHHMMSS)
+    String startDate;    // Start date and time (YYYYMMDDTHHMMSS)
+    String endDate;      // End date and time (YYYYMMDDTHHMMSS)
     String name;   // Summary or title of the event
-    bool isAllDayEvent;
+    bool allDayEvent;
 } calEvent;
 
 calEvent events[MAX_EVENTS];
-int eventNumber = -1;
+int numEvents = 0;
 
 // Store int in rtc data, to remain persistent during deep sleep
 RTC_DATA_ATTR int bootCount = 0;
@@ -66,42 +66,24 @@ void handleWakeup()
   }
 }
 
-void parseEventData(const String& eventData) 
+void processPayload(const String payload) 
 {
-    if (numEvents < MAX_EVENTS) {
-        // Split the eventData string into tokens using semicolon (;) as delimiter
-        int startPos = 0;
-        int endPos = eventData.indexOf(';');
-        events[numEvents].name = eventData.substring(startPos, endPos);
-        startPos = endPos + 1;
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, payload);
+  
+  // TODO add proper error handling - print on the board if response has an error field
+  if (error) {
+    Serial.print("Parsing failed: ");
+    Serial.println(error.c_str());
+    return;
+  }
 
-        endPos = eventData.indexOf(';', startPos);
-        events[numEvents].isAllDayEvent = (eventData.substring(startPos, endPos) == "true");
-        startPos = endPos + 1;
-
-        endPos = eventData.indexOf(';', startPos);
-        events[numEvents].startTime = eventData.substring(startPos, endPos);
-        startPos = endPos + 1;
-
-        endPos = eventData.indexOf(';', startPos);
-        events[numEvents].endTime = eventData.substring(startPos, endPos);
-
-        // Increment the number of events
-        numEvents++;
-    } else {
-        Serial.println(F("Maximum number of events reached!"));
-    }
-}
-
-void processPayload(const String& allEventData) 
-{
-  int startPos = 0;
-  int endPos = allEventData.indexOf('\n');
-  while (endPos != -1) {
-      String eventData = allEventData.substring(startPos, endPos);
-      parseEventData(eventData);
-      startPos = endPos + 1;
-      endPos = allEventData.indexOf('\n', startPos);
+  JsonArray payloadEvents = doc["events"].as<JsonArray>();
+  for (JsonObject event : payloadEvents) {
+    events[numEvents].name = event["name"].as<String>();
+    events[numEvents].allDayEvent = event["allDayEvent"];
+    events[numEvents].startDate = event["startDate"].as<String>();
+    events[numEvents].endDate = event["endDate"].as<String>();
   }
 }
 
@@ -114,11 +96,11 @@ void printEvents()
     Serial.print(F("Name: "));
     Serial.println(events[i].name);
     Serial.print(F("Is All Day Event: "));
-    Serial.println(events[i].isAllDayEvent ? "true" : "false");
-    Serial.print(F("Start Time: "));
-    Serial.println(events[i].startTime);
-    Serial.print(F("End Time: "));
-    Serial.println(events[i].endTime);
+    Serial.println(events[i].allDayEvent ? "true" : "false");
+    Serial.print(F("Start Date: "));
+    Serial.println(events[i].startDate);
+    Serial.print(F("End Date: "));
+    Serial.println(events[i].endDate);
     Serial.println();
   }
 }
@@ -127,6 +109,16 @@ int getNextUiStep()
 {
   currentUiStep = currentUiStep + UI_STEP;
   return currentUiStep;
+}
+
+void printTextFromTop(String text, int textSize, int charWidth, int charHeight) 
+{
+  display.setTextSize(textSize);
+  int textWidth = text.length() * charWidth * textSize;
+  int textHeight = charHeight * textSize;
+  int x = (display.width() - textWidth) / 2;
+  display.setCursor((display.width() - textWidth) / 2, getNextUiStep());
+  display.println(text);
 }
 
 void printCalendar() 
@@ -139,41 +131,46 @@ void printCalendar()
   display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
 
   // these are used during the UI calculations
-  int textWidth, textHeight, x, y;
+  // int textWidth, textHeight, x, y;
 
   // rotate display so the wake button is always up so user can easily refresh
   display.setRotation(-1);
 
-  // TODO move the format to the config
   String date = network.getDate("%04d-%02d-%02d");
-  display.setTextSize(DATE_TEXT_SIZE);
-  textWidth = date.length() * CHAR_WIDTH * DATE_TEXT_SIZE;
-  textHeight = CHAR_HEIGHT * DATE_TEXT_SIZE;
-  // x and y centered
-  x = (display.width() - textWidth) / 2;
-  y = (display.height() - textHeight) / 2;
-  display.setCursor(x, getNextUiStep());
-  display.println(date);
+  printTextFromTop(date, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+
+  printTextFromTop("All-day events", TITLE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+
+  // TODO move the format to the config
+  // String date = network.getDate("%04d-%02d-%02d");
+  // display.setTextSize(DATE_TEXT_SIZE);
+  // textWidth = date.length() * CHAR_WIDTH * DATE_TEXT_SIZE;
+  // textHeight = CHAR_HEIGHT * DATE_TEXT_SIZE;
+  // // x and y centered
+  // x = (display.width() - textWidth) / 2;
+  // y = (display.height() - textHeight) / 2;
+  // display.setCursor(x, getNextUiStep());
+  // display.println(date);
 
 
-  String allDayEventsString = "All-day events";
-  display.setTextSize(TITLE_TEXT_SIZE);
-  textWidth = allDayEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
-  textHeight = CHAR_HEIGHT * TITLE_TEXT_SIZE;
-  x = (display.width() - textWidth) / 2;
-  display.setCursor(x, getNextUiStep());
-  display.println(allDayEventsString);
+  // String allDayEventsString = "All-day events";
+  // display.setTextSize(TITLE_TEXT_SIZE);
+  // textWidth = allDayEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
+  // textHeight = CHAR_HEIGHT * TITLE_TEXT_SIZE;
+  // x = (display.width() - textWidth) / 2;
+  // display.setCursor(x, getNextUiStep());
+  // display.println(allDayEventsString);
 
 
-  String shortEventsString = "Short events";
-  textWidth = shortEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
-  x = (display.width() - textWidth) / 2;
-  display.setCursor(x, y + UI_STEP);
-  display.println(shortEventsString);
+  // String shortEventsString = "Short events";
+  // textWidth = shortEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
+  // x = (display.width() - textWidth) / 2;
+  // display.setCursor(x, y + UI_STEP);
+  // display.println(shortEventsString);
 
 
   display.display(); // Write hello message on the screen
-  delay(50000);       // Wait a little bit
+  delay(500000);       // Wait a little bit
 }
 
 void setup() 

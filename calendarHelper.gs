@@ -1,12 +1,13 @@
-const daysToViewAhead = 3;
+const daysToViewAhead = 1;
 
 function doGet(e) {
 
   var calendars = CalendarApp.getAllOwnedCalendars();
   
   if (calendars == undefined) {
-    Logger.log("No data");
-    return ContentService.createTextOutput("ERROR: No access to calendar");
+    const error = "Can not access any calendar";
+    Logger.log(error);
+    return ContentService.createTextOutput({ "error": error }).setMimeType(ContentService.MimeType.JSON);
   }
 
   var start = new Date(); 
@@ -21,19 +22,21 @@ function doGet(e) {
     event.getMyStatus() == CalendarApp.GuestStatus.YES ||
     event.getMyStatus() == CalendarApp.GuestStatus.MAYBE
   );
-  
-  var str = '';
+
+  eventArray = [];
   for (var i = 0; i < events.length; i++) {
-    str += removeAccentsFromString(events[i].getTitle())  + ';' +
-    events[i].isAllDayEvent() + ';' + 
-    Utilities.formatDate(events[i].getStartTime(), 'Etc/GMT', 'yyyy-MM-dd\'T\'HH:mm\'Z\'') + ';' +
-    Utilities.formatDate(events[i].getEndTime(), 'Etc/GMT', 'yyyy-MM-dd\'T\'HH:mm\'Z\'') + ';' +
-    '\n';
+    eventArray.push({ 
+      "name": removeAccentsFromString(events[i].getTitle()),
+      "allDayEvent" : events[i].isAllDayEvent(),
+      "startDate": Utilities.formatDate(events[i].getStartTime(), 'Etc/GMT', 'yyyy-MM-dd\'T\'HH:mm\'Z\''),
+      "endDate": Utilities.formatDate(events[i].getEndTime(), 'Etc/GMT', 'yyyy-MM-dd\'T\'HH:mm\'Z\'')
+    });
   }
 
-  Logger.log(str);
+  const respoonse = { "events": eventArray };
+  Logger.log(JSON.stringify(respoonse));
   
-  return ContentService.createTextOutput(str);
+  return ContentService.createTextOutput(JSON.stringify(respoonse)).setMimeType(ContentService.MimeType.JSON);
 }
 
 function removeAccentsFromString(str) {
@@ -59,7 +62,7 @@ function removeAccentsFromString(str) {
   });
 }
 
-// test function - can be run from Google Script Editor
+// TODO test method
 function testRemoveAccents() {
   var accentedString = "cliché café résumé ñoño ÁÉÍÓÚÜÀÈÌÒÙÂÊÎÔÛÃÕÇ árvíztűrő tükörfúrógép";
   var withoutAccents = removeAccentsFromString(accentedString);
