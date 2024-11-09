@@ -23,3 +23,10 @@ TODO add images and description
 8. Plug your Inkplate5 via USB and upload the code
 9. Test it and adjust the config if needed
 10. Enjoy
+
+## TODO
+- invited calendar events are not visible
+- dynamic update based on time
+
+## Arduino IDE setup and common mistakes
+- To find out the correct COM port just check the Device Manager in Windows -> Ports -> unplug and plug your Inkplate

@@ -12,43 +12,42 @@
 #include "Network.h"
 #include "NetworkConfig.h"
 
+// TODO check for "error" field in the response and print that if there is any
 Inkplate display(INKPLATE_1BIT); // Create object on Inkplate library and set library to work in monochorme mode
 Network network;
 WiFiClientSecure client;
 String payload;
 int currentUiStep = 0;
 
+// UI variables
 #define DATE_TEXT_SIZE 2
+#define TIME_TEXT_SIZE 3
 #define TITLE_TEXT_SIZE 4 // UI acts all good until up to 6 - it is all the display can fit
 #define CHAR_WIDTH 6 // Define the width of a single character in pixels - Assuming a monospaced font
 #define CHAR_HEIGHT 8 // Assuming a monospaced font
-#define UI_STEP 30
+#define UI_STEP 20
+#define UI_EVENT_STEP 40
 
-#define MAX_EVENTS 10  // Define the maximum number of events you want to store
+#define MAX_ALL_DAY_EVENT_NUMBER 8
+#define MAX_SHORT_EVENT_NUMBER 5
 
-
+String currentTimestamp;
 typedef struct {
-    String startDate;    // Start date and time (YYYYMMDDTHHMMSS)
-    String endDate;      // End date and time (YYYYMMDDTHHMMSS)
+    String startDate;    // Start date and time (YYYY-MM-DDTHH:MM)
+    String endDate;      // End date and time 
     String name;   // Summary or title of the event
     bool allDayEvent;
 } calEvent;
 
-calEvent events[MAX_EVENTS];
-int numEvents = 0;
-
-// Store int in rtc data, to remain persistent during deep sleep
-RTC_DATA_ATTR int bootCount = 0;
+calEvent allDayEvents[MAX_ALL_DAY_EVENT_NUMBER];
+calEvent shortEvents[MAX_SHORT_EVENT_NUMBER];
+int shortEventNumber = 0;
+int allDayEventNumber = 0;
 
 void handleWakeup() 
 {
-  ++bootCount;
-
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
-
-  Serial.print(F("Boot count: "));
-  Serial.println(bootCount, DEC);
 
   switch(wakeup_reason)
   {
@@ -78,30 +77,28 @@ void processPayload(const String payload)
     return;
   }
 
-  JsonArray payloadEvents = doc["events"].as<JsonArray>();
-  for (JsonObject event : payloadEvents) {
-    events[numEvents].name = event["name"].as<String>();
-    events[numEvents].allDayEvent = event["allDayEvent"];
-    events[numEvents].startDate = event["startDate"].as<String>();
-    events[numEvents].endDate = event["endDate"].as<String>();
-  }
-}
-
-// test function
-void printEvents() 
-{
-  for (int i = 0; i < numEvents; i++) {
-    Serial.print(F("Event "));
-    Serial.println(i + 1);
-    Serial.print(F("Name: "));
-    Serial.println(events[i].name);
-    Serial.print(F("Is All Day Event: "));
-    Serial.println(events[i].allDayEvent ? "true" : "false");
-    Serial.print(F("Start Date: "));
-    Serial.println(events[i].startDate);
-    Serial.print(F("End Date: "));
-    Serial.println(events[i].endDate);
-    Serial.println();
+  currentTimestamp = doc["timestamp"].as<String>();
+  JsonArray payloadallDayEvents = doc["events"].as<JsonArray>();
+  for (JsonObject event : payloadallDayEvents) {
+    bool allDayEvent = event["allDayEvent"];
+  
+    // TODO this does not work well
+    if(allDayEvent && allDayEventNumber <= MAX_ALL_DAY_EVENT_NUMBER)
+    {
+      allDayEvents[allDayEventNumber].name = event["name"].as<String>();
+      allDayEvents[allDayEventNumber].allDayEvent = event["allDayEvent"];
+      allDayEvents[allDayEventNumber].startDate = event["startDate"].as<String>();
+      allDayEvents[allDayEventNumber].endDate = event["endDate"].as<String>();
+      allDayEventNumber++;
+    }
+    else if(shortEventNumber <= MAX_SHORT_EVENT_NUMBER)
+    {
+      shortEvents[shortEventNumber].name = event["name"].as<String>();
+      shortEvents[shortEventNumber].allDayEvent = event["allDayEvent"];
+      shortEvents[shortEventNumber].startDate = event["startDate"].as<String>();
+      shortEvents[shortEventNumber].endDate = event["endDate"].as<String>();
+      shortEventNumber++;
+    }
   }
 }
 
@@ -111,7 +108,7 @@ int getNextUiStep()
   return currentUiStep;
 }
 
-void printTextFromTop(String text, int textSize, int charWidth, int charHeight) 
+void printTextFromTop(String text, double textSize, int charWidth, int charHeight) 
 {
   display.setTextSize(textSize);
   int textWidth = text.length() * charWidth * textSize;
@@ -119,58 +116,37 @@ void printTextFromTop(String text, int textSize, int charWidth, int charHeight)
   int x = (display.width() - textWidth) / 2;
   display.setCursor((display.width() - textWidth) / 2, getNextUiStep());
   display.println(text);
+  getNextUiStep();
 }
 
+// If you ever need to change the UI here is the guide: https://inkplate.readthedocs.io/en/latest/arduino.html#system-functions
+// It uses the "Adafruit GFX Graphics Library": https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
 void printCalendar() 
 {
   display.begin();        // Init library (you should call this function ONLY ONCE)
   display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
 
-  // helper lines for UI alignments - params: starting X, starting Y, length, color
-  display.drawFastVLine(E_INK_WIDTH / 2, 0, E_INK_HEIGHT, BLACK);
-  display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
-
-  // these are used during the UI calculations
-  // int textWidth, textHeight, x, y;
-
   // rotate display so the wake button is always up so user can easily refresh
   display.setRotation(-1);
 
-  String date = network.getDate("%04d-%02d-%02d");
-  printTextFromTop(date, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  printTextFromTop(currentTimestamp, TITLE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
 
-  printTextFromTop("All-day events", TITLE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  for (int i = 0; i < allDayEventNumber; i++) {
+    printTextFromTop(allDayEvents[i].name, TIME_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  }
 
-  // TODO move the format to the config
-  // String date = network.getDate("%04d-%02d-%02d");
-  // display.setTextSize(DATE_TEXT_SIZE);
-  // textWidth = date.length() * CHAR_WIDTH * DATE_TEXT_SIZE;
-  // textHeight = CHAR_HEIGHT * DATE_TEXT_SIZE;
-  // // x and y centered
-  // x = (display.width() - textWidth) / 2;
-  // y = (display.height() - textHeight) / 2;
-  // display.setCursor(x, getNextUiStep());
-  // display.println(date);
+  // draw one single line between all day and short events - fixed values so NOT scaled to other Inkplates
+  int y = getNextUiStep();
+  display.drawThickLine(50, y, E_INK_HEIGHT - 50, y, BLACK, 2);
 
-
-  // String allDayEventsString = "All-day events";
-  // display.setTextSize(TITLE_TEXT_SIZE);
-  // textWidth = allDayEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
-  // textHeight = CHAR_HEIGHT * TITLE_TEXT_SIZE;
-  // x = (display.width() - textWidth) / 2;
-  // display.setCursor(x, getNextUiStep());
-  // display.println(allDayEventsString);
+  for (int i = 0; i < shortEventNumber; i++) {
+    printTextFromTop(shortEvents[i].startDate + " - " + shortEvents[i].endDate, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    printTextFromTop(shortEvents[i].name, TIME_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  }
 
 
-  // String shortEventsString = "Short events";
-  // textWidth = shortEventsString.length() * CHAR_WIDTH * TITLE_TEXT_SIZE;
-  // x = (display.width() - textWidth) / 2;
-  // display.setCursor(x, y + UI_STEP);
-  // display.println(shortEventsString);
-
-
-  display.display(); // Write hello message on the screen
-  delay(500000);       // Wait a little bit
+  display.display();
+  delay(500000);
 }
 
 void setup() 
@@ -181,6 +157,7 @@ void setup()
   handleWakeup();
 
   network.begin(ssid, pass);
+  // TODO 1 hour ahead -> needed to set the proper midnigh refresh
   network.setTimeInfo(timezoneOffset); // set it after every wakeup so the daylight saving won't cause any problem
 
   Serial.println("Getting data");
@@ -202,5 +179,43 @@ void setup()
 }
 
 void loop() {
-    // Never here, as deepsleep restarts esp32
+    // Never here, as deepsleep restarts esp32 and always begins with setup
+}
+
+
+// --- test functions for debugging
+void drawHelperLines() 
+{
+  // helper lines for UI alignments - params: starting X, starting Y, length, color
+  display.drawFastVLine(E_INK_WIDTH / 2, 0, E_INK_HEIGHT, BLACK);
+  display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
+}
+
+void printEvents() 
+{
+  Serial.println(currentTimestamp);
+  Serial.println();
+
+  Serial.println("--- All day events ---");
+  for (int i = 0; i < allDayEventNumber; i++) {
+    printEvent(allDayEvents[i]);
+  }
+
+  Serial.println("--- Short events ---");
+  for (int i = 0; i < shortEventNumber; i++) {
+    printEvent(shortEvents[i]);
+  }
+}
+
+void printEvent(calEvent event)
+{
+  Serial.print(F("Name: "));
+  Serial.println(event.name);
+  Serial.print(F("Is All Day Event: "));
+  Serial.println(event.allDayEvent ? "true" : "false");
+  Serial.print(F("Start Date: "));
+  Serial.println(event.startDate);
+  Serial.print(F("End Date: "));
+  Serial.println(event.endDate);
+  Serial.println();
 }
