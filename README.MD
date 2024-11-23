@@ -1,11 +1,11 @@
 
+
 # InkCal
 
 If you are into the micro-checkpoint lifestyle, then this tool is for you.
 This is an e-calendar to show your Google calendar data for the day. It can sit on your desk and tell your next upcoming event anytime.
 
 ## Features
-
  - Able to display: invited and your own calendar events (all-day and short events)
  - It updates every day 5 mins after midnight
  - It runs for months with a single charge
@@ -15,6 +15,9 @@ This is an e-calendar to show your Google calendar data for the day. It can sit 
 
 ## How It Works
 TODO add images and description
+
+## Limitations
+- If is only able to display english characters because of the restriction of the [Adafruit GFX library](https://github.com/adafruit/Adafruit-GFX-Library). Drop me a message if it is solved and I look into it
 
 ## How to set it up
 1. Use the 'calendarHelper.gs' file to set up a new Google App Script project
@@ -30,8 +33,11 @@ TODO add images and description
 11. Test it and adjust the config if needed
 12. Enjoy
 
+## Dependencies
+- InkplateLibrary@10.0.0
+
 ## TODO
-- dynamic update based on time
+- dynamic update based on current time -> Account time can be used from the response
 
 ## Arduino IDE setup and common mistakes
 - To find out the correct COM port just check the Device Manager in Windows -> Ports -> unplug and plug your Inkplate
