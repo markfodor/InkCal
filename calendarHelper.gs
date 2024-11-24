@@ -1,13 +1,13 @@
 const daysToViewAhead = 1;    // The days ahead you wish to dispay, ideally it is only the current day so 1
-const dateFormatPattern = 'yyyy-MM-dd HH:mm';
+const dateFormatPattern = 'yyyy-MM-dd';
 const timePattern = 'HH:mm';
 
 function doGet(e) {
-  // E.g: 'Europe/Madrid' -> you can override this if you want to differ from your account setup
+  // E.g: 'Europe/Madrid' -> you can override this if you want to differ from your Google account setup
   // https://developers.google.com/google-ads/api/data/codes-formats#timezone-ids
-  let timeZone = Session.getTimeZone();
-  let calendars = CalendarApp.getAllOwnedCalendars();
-  
+  const timeZone = Session.getScriptTimeZone();
+  const calendars = CalendarApp.getAllOwnedCalendars();
+
   if (calendars == undefined) {
     const error = "Can not access any calendar";
     Logger.log(error);
@@ -32,25 +32,72 @@ function doGet(e) {
     eventArray.push({ 
       "name": removeAccentsFromString(events[i].getTitle()),
       "allDayEvent" : events[i].isAllDayEvent(),
-      "startDate": Utilities.formatDate(events[i].getStartTime(), timeZone, timePattern),
+      "startDate": Utilities.formatDate(events[i].getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
       "endDate": Utilities.formatDate(events[i].getEndTime(), timeZone, timePattern)
     });
   }
 
+  const currentTime = getFormattedTimestamp(timeZone, timePattern);
   const respoonse = {
-    "timestamp": getFormattedTimestamp(Session.getScriptTimeZone(), dateFormatPattern),
+    "date": getFormattedTimestamp(timeZone, dateFormatPattern),
+    "time": currentTime,
+    "sleep": calculateDeepSleepInMins(eventArray),
     "events": eventArray
   };
   const jsonString = JSON.stringify(respoonse); 
 
-  // uncomment this for testing
-  // Logger.log(jsonString);
+  // uncomment this line for testing
+  Logger.log(jsonString);
   return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
 }
 
-// timezone can be "Europe/Madrid", ro can be returned with Session.getScriptTimeZone()
+function calculateDeepSleepInMins(eventArray) {
+  const minsUntilMidnight = getMinutesUntilMidnight();
+  const minsUntilNextEvent = 99999;
+  
+  for (let i = 0; i < eventArray.length; i++) {
+    if (!eventArray[i].allDayEvent) {
+      const minsUntilNext = getMinutesUntilTime(eventArray[i].startDate);
+      if (minsUntilNext < minsUntilNextEvent) {
+        minsUntilNextEvent = minsUntilNext;
+      }
+    }
+  }
+
+  return (minsUntilMidnight < minsUntilNextEvent) ? minsUntilMidnight : minsUntilNextEvent;
+}
+
+function getMinutesUntilTime(targetTimeString) {
+  const now = new Date();
+  const [targetHours, targetMinutes] = targetTimeString.split(":").map(Number);
+  const targetTime = new Date();
+  targetTime.setHours(targetHours, targetMinutes, 0, 0); // Set target hours and minutes
+
+  // If the target time is earlier than the current time
+  if (targetTime < now) {
+    return 99999;
+  }
+
+  // Calculate the difference in milliseconds and convert to minutes
+  const difference = targetTime - now;
+  const minutesRemaining = Math.floor(difference / (1000 * 60));
+  return minutesRemaining;
+}
+
+
+function getMinutesUntilMidnight() {
+  const now = new Date();
+
+  const midnight = new Date();
+  midnight.setDate(now.getDate() + 1);
+  midnight.setHours(0, 0, 0, 0); // Set time to 00:00:00
+
+  const difference = midnight - now;
+  return Math.floor(difference / (1000 * 60)) + 5; // plus 5 mins to avoid collisions
+}
+
 function getFormattedTimestamp(timeZone, format) {
-  return Utilities.formatDate( new Date(), timeZone, format);
+  return Utilities.formatDate(new Date(), timeZone, format);
 }
 
 function removeAccentsFromString(str) {
@@ -103,9 +150,15 @@ function byStart(a, b) {
   return a.getStartTime().getTime() - b.getStartTime().getTime();
 }
 
-// test method to check the character coding
+// ----- test methods - you can run them directly if you wish -----
 function testRemoveAccents() {
   let accentedString = "cliché café résumé ñoño ÁÉÍÓÚÜÀÈÌÒÙÂÊÎÔÛÃÕÇ árvíztűrő tükörfúrógép";
   let withoutAccents = removeAccentsFromString(accentedString);
   Logger.log(withoutAccents);
+}
+
+function testMinutesUntilTime() {
+  const targetTime = "21:30"; // Example target time
+  const minutes = getMinutesUntilTime(targetTime);
+  Logger.log(minutes);
 }
