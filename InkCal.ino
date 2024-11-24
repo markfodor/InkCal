@@ -19,6 +19,8 @@ WiFiClientSecure client;
 String payload;
 int currentUiStep = 0;
 
+#define uS_TO_S_FACTOR 1000000 // Conversion factor for micro seconds to seconds
+
 // UI variables
 #define DATE_TEXT_SIZE 2
 #define TIME_TEXT_SIZE 3
@@ -32,9 +34,10 @@ int currentUiStep = 0;
 #define MAX_SHORT_EVENT_NUMBER 5
 
 String currentTimestamp;
+int sleepInMins;
 typedef struct {
-    String startDate;    // Start date and time (YYYY-MM-DDTHH:MM)
-    String endDate;      // End date and time 
+    String startDate;    // (HH:MM)
+    String endDate;      // TODO rename these to ...Time
     String name;   // Summary or title of the event
     bool allDayEvent;
 } calEvent;
@@ -77,7 +80,8 @@ void processPayload(const String payload)
     return;
   }
 
-  currentTimestamp = doc["timestamp"].as<String>();
+  currentTimestamp = doc["date"].as<String>() + " - " + doc["time"].as<String>();
+  sleepInMins = doc["sleep"];
   JsonArray payloadallDayEvents = doc["events"].as<JsonArray>();
   for (JsonObject event : payloadallDayEvents) {
     bool allDayEvent = event["allDayEvent"];
@@ -135,7 +139,7 @@ void printCalendar()
     printTextFromTop(allDayEvents[i].name, TIME_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
   }
 
-  // draw one single line between all day and short events - fixed values so NOT scaled to other Inkplates
+  // draw one single line between all day and short events
   int y = getNextUiStep();
   display.drawThickLine(50, y, E_INK_HEIGHT - 50, y, BLACK, 2);
 
@@ -146,7 +150,7 @@ void printCalendar()
 
 
   display.display();
-  delay(500000);
+  delay(100);
 }
 
 void setup() 
@@ -157,9 +161,6 @@ void setup()
   handleWakeup();
 
   network.begin(ssid, pass);
-  // TODO 1 hour ahead -> needed to set the proper midnigh refresh
-  network.setTimeInfo(timezoneOffset); // set it after every wakeup so the daylight saving won't cause any problem
-
   Serial.println("Getting data");
   while (!network.getData(calendarURL, payload)) {
     Serial.print('.');
@@ -167,14 +168,16 @@ void setup()
   }
 
   processPayload(payload);
-  printEvents();
+  printEvents(); // for testing
   printCalendar();
 
-  Serial.println("Going to sleep");
+  Serial.print("Going to sleep for ");
+  Serial.print(sleepInMins);
+  Serial.print(" mins");
   delay(100);
-  esp_sleep_enable_timer_wakeup(60ll * 2 * 1000 * 1000); //wakeup in 60min time - 60min * 60s * 1000ms * 1000us
-  // Enable wakeup from deep sleep on gpio 36 (wake button)
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
+
+  esp_sleep_enable_timer_wakeup(sleepInMins * 60ll * uS_TO_S_FACTOR); // needs to be multiplied with a long number!
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, 0);   // Enable wakeup from deep sleep on gpio 36 (wake button)
   esp_deep_sleep_start();
 }
 
@@ -183,7 +186,7 @@ void loop() {
 }
 
 
-// --- test functions for debugging
+// ----- test functions for debugging -----
 void drawHelperLines() 
 {
   // helper lines for UI alignments - params: starting X, starting Y, length, color
@@ -194,6 +197,7 @@ void drawHelperLines()
 void printEvents() 
 {
   Serial.println(currentTimestamp);
+  Serial.println(sleepInMins);
   Serial.println();
 
   Serial.println("--- All day events ---");

@@ -4,6 +4,5 @@
 char *ssid = "";    // Your WiFi SSID
 char *pass = ""; // Your WiFi password
 char calendarURL[] = ""; // URL to trigger your Google Script
-int timezoneOffset = 2; // Your timeset offset
 
 #endif
