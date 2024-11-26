@@ -1,59 +1,70 @@
 const daysToViewAhead = 1;    // The days ahead you wish to dispay, ideally it is only the current day so 1
-const dateFormatPattern = 'yyyy-MM-dd';
+const dateFormatPattern = 'yyyy.MM.dd';
 const timePattern = 'HH:mm';
 
 function doGet(e) {
-  // E.g: 'Europe/Madrid' -> you can override this if you want to differ from your Google account setup
-  // https://developers.google.com/google-ads/api/data/codes-formats#timezone-ids
-  const timeZone = Session.getScriptTimeZone();
-  const calendars = CalendarApp.getAllOwnedCalendars();
+  try {
+    return buildResponseJson();
+  } catch (e) {
+    const message = {"error": e.toString()}
+    const jsonString = JSON.stringify(message);
 
-  if (calendars == undefined) {
-    const error = "Can not access any calendar";
-    Logger.log(error);
-    return ContentService.createTextOutput({ "error": error }).setMimeType(ContentService.MimeType.JSON);
+    Logger.log(jsonString); // uncomment this line for testing
+    return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
   }
+}
 
-  let start = new Date(); 
-  start.setHours(0, 0, 0);  // start at midnight
-  const oneday = 24*3600000; // [msec]
-  const stop = new Date(start.getTime() + daysToViewAhead * oneday);
-  let events = mergeCalendarEvents(calendars, start, stop); //pull start/stop time
+function buildResponseJson() {
+    // E.g: 'Europe/Madrid' -> you can override this if you want to differ from your Google account setup
+    // https://developers.google.com/google-ads/api/data/codes-formats#timezone-ids
+    const timeZone = Session.getScriptTimeZone();
+    const calendars = CalendarApp.getAllOwnedCalendars();
 
-  // exclude the INVITED and NO answered events --> include only your own events and the ones you answared YES or MAYBE
-  events = events.filter(event =>
-    event.getMyStatus() == CalendarApp.GuestStatus.OWNER ||
-    event.getMyStatus() == CalendarApp.GuestStatus.YES ||
-    event.getMyStatus() == CalendarApp.GuestStatus.MAYBE
-  );
+    if (calendars == undefined) {
+      const error = "Can not access any calendar";
+      Logger.log(error);
+      return ContentService.createTextOutput({ "error": error }).setMimeType(ContentService.MimeType.JSON);
+    }
 
-  eventArray = [];
-  for (let i = 0; i < events.length; i++) {
-    eventArray.push({ 
-      "name": removeAccentsFromString(events[i].getTitle()),
-      "allDayEvent" : events[i].isAllDayEvent(),
-      "startDate": Utilities.formatDate(events[i].getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
-      "endDate": Utilities.formatDate(events[i].getEndTime(), timeZone, timePattern)
-    });
-  }
+    let start = new Date(); 
+    start.setHours(0, 0, 0);  // start at midnight
+    const oneday = 24*3600000; // [msec]
+    const stop = new Date(start.getTime() + daysToViewAhead * oneday);
+    let events = mergeCalendarEvents(calendars, start, stop); //pull start/stop time
 
-  const currentTime = getFormattedTimestamp(timeZone, timePattern);
-  const respoonse = {
-    "date": getFormattedTimestamp(timeZone, dateFormatPattern),
-    "time": currentTime,
-    "sleep": calculateDeepSleepInMins(eventArray),
-    "events": eventArray
-  };
-  const jsonString = JSON.stringify(respoonse); 
+    // exclude the INVITED and NO answered events --> include only your own events and the ones you answared YES or MAYBE
+    events = events.filter(event =>
+      event.getMyStatus() == CalendarApp.GuestStatus.OWNER ||
+      event.getMyStatus() == CalendarApp.GuestStatus.YES ||
+      event.getMyStatus() == CalendarApp.GuestStatus.MAYBE
+    );
 
-  // uncomment this line for testing
-  Logger.log(jsonString);
-  return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
+    eventArray = [];
+    for (let i = 0; i < events.length; i++) {
+      eventArray.push({ 
+        "name": removeAccentsFromString(events[i].getTitle()),
+        "allDayEvent" : events[i].isAllDayEvent(),
+        "startDate": Utilities.formatDate(events[i].getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
+        "endDate": Utilities.formatDate(events[i].getEndTime(), timeZone, timePattern)
+      });
+    }
+
+    const currentTime = getFormattedTimestamp(timeZone, timePattern);
+    const respoonse = {
+      "date": getFormattedTimestamp(timeZone, dateFormatPattern),
+      "time": currentTime,
+      "sleep": calculateDeepSleepInMins(eventArray),
+      "events": eventArray
+    };
+    const jsonString = JSON.stringify(respoonse); 
+
+    Logger.log(jsonString); // uncomment this line for testing
+    return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
 }
 
 function calculateDeepSleepInMins(eventArray) {
   const minsUntilMidnight = getMinutesUntilMidnight();
-  const minsUntilNextEvent = 99999;
+  let minsUntilNextEvent = 99999;
   
   for (let i = 0; i < eventArray.length; i++) {
     if (!eventArray[i].allDayEvent) {

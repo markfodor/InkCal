@@ -23,7 +23,7 @@ int currentUiStep = 0;
 
 // UI variables
 #define DATE_TEXT_SIZE 2
-#define TIME_TEXT_SIZE 3
+#define EVENT_TEXT_SIZE 3
 #define TITLE_TEXT_SIZE 4 // UI acts all good until up to 6 - it is all the display can fit
 #define CHAR_WIDTH 6 // Define the width of a single character in pixels - Assuming a monospaced font
 #define CHAR_HEIGHT 8 // Assuming a monospaced font
@@ -34,7 +34,7 @@ int currentUiStep = 0;
 #define MAX_SHORT_EVENT_NUMBER 5
 
 String currentTimestamp;
-int sleepInMins;
+int sleepInMins = 3600; // if error -> sleep for 6 hours
 typedef struct {
     String startDate;    // (HH:MM)
     String endDate;      // TODO rename these to ...Time
@@ -46,6 +46,7 @@ calEvent allDayEvents[MAX_ALL_DAY_EVENT_NUMBER];
 calEvent shortEvents[MAX_SHORT_EVENT_NUMBER];
 int shortEventNumber = 0;
 int allDayEventNumber = 0;
+String errorResponse = ""; // used for server errors and deserialization problems
 
 void handleWakeup() 
 {
@@ -68,16 +69,22 @@ void handleWakeup()
   }
 }
 
-void processPayload(const String payload) 
+bool processPayload(const String payload) 
 {
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, payload);
   
-  // TODO add proper error handling - print on the board if response has an error field
   if (error) {
     Serial.print("Parsing failed: ");
-    Serial.println(error.c_str());
-    return;
+    errorResponse = error.c_str();
+    Serial.println(errorResponse);
+    return false;
+  }
+
+  if (doc.containsKey("error")) 
+  {
+    errorResponse = doc["error"].as<String>();
+    return false;
   }
 
   currentTimestamp = doc["date"].as<String>() + " - " + doc["time"].as<String>();
@@ -85,9 +92,8 @@ void processPayload(const String payload)
   JsonArray payloadallDayEvents = doc["events"].as<JsonArray>();
   for (JsonObject event : payloadallDayEvents) {
     bool allDayEvent = event["allDayEvent"];
-  
-    // TODO this does not work well
-    if(allDayEvent && allDayEventNumber <= MAX_ALL_DAY_EVENT_NUMBER)
+
+    if(allDayEvent)
     {
       allDayEvents[allDayEventNumber].name = event["name"].as<String>();
       allDayEvents[allDayEventNumber].allDayEvent = event["allDayEvent"];
@@ -95,7 +101,7 @@ void processPayload(const String payload)
       allDayEvents[allDayEventNumber].endDate = event["endDate"].as<String>();
       allDayEventNumber++;
     }
-    else if(shortEventNumber <= MAX_SHORT_EVENT_NUMBER)
+    else
     {
       shortEvents[shortEventNumber].name = event["name"].as<String>();
       shortEvents[shortEventNumber].allDayEvent = event["allDayEvent"];
@@ -104,6 +110,8 @@ void processPayload(const String payload)
       shortEventNumber++;
     }
   }
+
+  return true;
 }
 
 int getNextUiStep()
@@ -136,7 +144,7 @@ void printCalendar()
   printTextFromTop(currentTimestamp, TITLE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
 
   for (int i = 0; i < allDayEventNumber; i++) {
-    printTextFromTop(allDayEvents[i].name, TIME_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    printTextFromTop(allDayEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
   }
 
   // draw one single line between all day and short events
@@ -145,10 +153,21 @@ void printCalendar()
 
   for (int i = 0; i < shortEventNumber; i++) {
     printTextFromTop(shortEvents[i].startDate + " - " + shortEvents[i].endDate, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
-    printTextFromTop(shortEvents[i].name, TIME_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    printTextFromTop(shortEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
   }
 
 
+  display.display();
+  delay(100);
+}
+
+void printError() 
+{
+  display.begin();
+  display.clearDisplay();
+  display.setRotation(-1);
+  display.setTextSize(EVENT_TEXT_SIZE);
+  display.println(errorResponse);
   display.display();
   delay(100);
 }
@@ -167,9 +186,19 @@ void setup()
     delay(1000);
   }
 
-  processPayload(payload);
-  printEvents(); // for testing
-  printCalendar();
+  bool success = processPayload(payload);
+  Serial.println("success");
+  Serial.println(success);
+
+  if (success)
+  {
+    logEvents(); // for testing
+    printCalendar();
+  }
+  else
+  {
+    printError();
+  }
 
   Serial.print("Going to sleep for ");
   Serial.print(sleepInMins);
@@ -194,7 +223,7 @@ void drawHelperLines()
   display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
 }
 
-void printEvents() 
+void logEvents() 
 {
   Serial.println(currentTimestamp);
   Serial.println(sleepInMins);
@@ -202,16 +231,16 @@ void printEvents()
 
   Serial.println("--- All day events ---");
   for (int i = 0; i < allDayEventNumber; i++) {
-    printEvent(allDayEvents[i]);
+    logEvent(allDayEvents[i]);
   }
 
   Serial.println("--- Short events ---");
   for (int i = 0; i < shortEventNumber; i++) {
-    printEvent(shortEvents[i]);
+    logEvent(shortEvents[i]);
   }
 }
 
-void printEvent(calEvent event)
+void logEvent(calEvent event)
 {
   Serial.print(F("Name: "));
   Serial.println(event.name);
