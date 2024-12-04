@@ -15,7 +15,7 @@ function doGet(e) {
 
     const message = {"error": e.toString()}
     const jsonString = JSON.stringify(message);
-    Logger.log(jsonString); // uncomment this line for testing
+    Logger.log(jsonString);
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
   }
 }
@@ -62,7 +62,7 @@ function buildResponseJson() {
     const respoonse = {
       "date": getFormattedTimestamp(timeZone, dateFormatPattern),
       "time": getFormattedTimestamp(timeZone, timePattern),
-      "sleep": calculateDeepSleepInMins(eventArray),
+      "sleep": calculateDeepSleepInMins(events),
       "events": eventArray
     };
     const jsonString = JSON.stringify(respoonse); 
@@ -80,14 +80,14 @@ function buildEventObject(event) {
       }
 }
 
-// TODO refactor to use the events and not the eventsArray
-function calculateDeepSleepInMins(eventArray) {
-  const minsUntilMidnight = getMinutesUntilMidnight();
+function calculateDeepSleepInMins(events) {
+  const now = new Date();  // used for every calculation to eliminate elapsed time between calculations
+  const minsUntilMidnight = getMinutesUntilMidnight(now);
   let minsUntilNextEvent = 99999;
   
-  for (let i = 0; i < eventArray.length; i++) {
-    if (!eventArray[i].allDayEvent) {
-      const minsUntilNext = getMinutesUntilTime(eventArray[i].endDate);
+  for (let i = 0; i < events.length; i++) {
+    if (!events[i].allDayEvent) {
+      const minsUntilNext = getMinutesUntil(events[i].getEndTime(), now);
       if (minsUntilNext < minsUntilNextEvent) {
         minsUntilNextEvent = minsUntilNext;
       }
@@ -98,27 +98,19 @@ function calculateDeepSleepInMins(eventArray) {
   return sleepInMins + 2; // add 2 mins to avoid race condition
 }
 
-function getMinutesUntilTime(targetTimeString) {
-  const now = new Date();
-  const [targetHours, targetMinutes] = targetTimeString.split(":").map(Number);
-  const targetTime = new Date();
-  targetTime.setHours(targetHours, targetMinutes, 0, 0); // Set target hours and minutes
-
+function getMinutesUntil(endDate, now) {
   // If the target time is earlier than the current time
-  if (targetTime < now) {
+  if (endDate < now) {
     return 99999;
   }
 
   // Calculate the difference in milliseconds and convert to minutes
-  const difference = targetTime - now;
+  const difference = endDate - now;
   const minutesRemaining = Math.floor(difference / (1000 * 60));
   return minutesRemaining;
 }
 
-
-function getMinutesUntilMidnight() {
-  const now = new Date();
-
+function getMinutesUntilMidnight(now) {
   const midnight = new Date();
   midnight.setDate(now.getDate() + 1);
   midnight.setHours(0, 0, 0, 0); // Set time to 00:00:00
@@ -189,7 +181,12 @@ function testRemoveAccents() {
 }
 
 function testMinutesUntilTime() {
-  const targetTime = "21:30"; // Example target time
-  const minutes = getMinutesUntilTime(targetTime);
+  const targetTime = new Date();
+  targetTime.setHours(24, 0, 0, 0);
+
+  const now = new Date();
+  now.setHours(23, 0, 0, 0);
+
+  const minutes = getMinutesUntil(targetTime, now);
   Logger.log(minutes);
 }
