@@ -12,7 +12,6 @@
 #include "Network.h"
 #include "NetworkConfig.h"
 
-// TODO check for "error" field in the response and print that if there is any
 Inkplate display(INKPLATE_1BIT); // Create object on Inkplate library and set library to work in monochorme mode
 Network network;
 WiFiClientSecure client;
@@ -48,13 +47,11 @@ int shortEventNumber = 0;
 int allDayEventNumber = 0;
 String errorResponse = ""; // used for server errors and deserialization problems
 
-void handleWakeup() 
-{
+void handleWakeup() {
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch(wakeup_reason)
-  {
+  switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0:
       Serial.println("Wakeup caused by external signal using RTC_IO"); 
 
@@ -69,8 +66,7 @@ void handleWakeup()
   }
 }
 
-bool processPayload(const String payload) 
-{
+bool processPayload(const String payload) {
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, payload);
   
@@ -81,8 +77,7 @@ bool processPayload(const String payload)
     return false;
   }
 
-  if (doc.containsKey("error")) 
-  {
+  if (doc.containsKey("error")) {
     errorResponse = doc["error"].as<String>();
     return false;
   }
@@ -93,16 +88,14 @@ bool processPayload(const String payload)
   for (JsonObject event : payloadallDayEvents) {
     bool allDayEvent = event["allDayEvent"];
 
-    if(allDayEvent)
-    {
+    if(allDayEvent) {
       allDayEvents[allDayEventNumber].name = event["name"].as<String>();
       allDayEvents[allDayEventNumber].allDayEvent = event["allDayEvent"];
       allDayEvents[allDayEventNumber].startDate = event["startDate"].as<String>();
       allDayEvents[allDayEventNumber].endDate = event["endDate"].as<String>();
       allDayEventNumber++;
     }
-    else
-    {
+    else {
       shortEvents[shortEventNumber].name = event["name"].as<String>();
       shortEvents[shortEventNumber].allDayEvent = event["allDayEvent"];
       shortEvents[shortEventNumber].startDate = event["startDate"].as<String>();
@@ -114,14 +107,46 @@ bool processPayload(const String payload)
   return true;
 }
 
-int getNextUiStep()
-{
+int getNextUiStep() {
   currentUiStep = currentUiStep + UI_STEP;
   return currentUiStep;
 }
 
-void printTextFromTop(String text, double textSize, int charWidth, int charHeight) 
-{
+
+String* splitStringToArray(String input, int maxLen, int &outputSize) {
+  String* output = new String[3]; // can split into max 3 lines
+  outputSize = 0;
+  input.trim();   // Remove leading and trailing spaces
+  int startIdx = 0; // Start of the current word
+  int spaceIdx;     // Index of the next space
+  String currentGroup = "";
+
+  while (startIdx < input.length()) {
+    spaceIdx = input.indexOf(' ', startIdx); // Find the next space
+    if (spaceIdx == -1) spaceIdx = input.length(); // If no space, go to the end
+
+    String word = input.substring(startIdx, spaceIdx);
+
+    if (currentGroup.length() + word.length() + (currentGroup.isEmpty() ? 0 : 1) <= maxLen) {
+      // Add the word to the current group if it fits (add 1 for the space)
+      if (!currentGroup.isEmpty()) currentGroup += " ";
+      currentGroup += word;
+    } else {
+      output[outputSize++] = currentGroup;
+      currentGroup = word; // Start a new group with the current word
+    }
+
+    startIdx = spaceIdx + 1;
+  }
+
+  if (!currentGroup.isEmpty()) {
+    output[outputSize++] = currentGroup;
+  }
+
+  return output;
+}
+
+void printTextFromTop(String text, double textSize, int charWidth, int charHeight) {
   display.setTextSize(textSize);
   int textWidth = text.length() * charWidth * textSize;
   int textHeight = charHeight * textSize;
@@ -133,8 +158,7 @@ void printTextFromTop(String text, double textSize, int charWidth, int charHeigh
 
 // If you ever need to change the UI here is the guide: https://inkplate.readthedocs.io/en/latest/arduino.html#system-functions
 // It uses the "Adafruit GFX Graphics Library": https://learn.adafruit.com/adafruit-gfx-graphics-library/using-fonts
-void printCalendar() 
-{
+void printCalendar() {
   display.begin();        // Init library (you should call this function ONLY ONCE)
   display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
 
@@ -144,7 +168,18 @@ void printCalendar()
   printTextFromTop(currentTimestamp, TITLE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
 
   for (int i = 0; i < allDayEventNumber; i++) {
-    printTextFromTop(allDayEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    // split too long all-day events into multiple rows
+    const int maxLen = 30;       // Maximum length of each group --> TODO make it dynamic if possible
+    int outputSize = 0;          // Number of strings in the output array
+    String* result = splitStringToArray(allDayEvents[i].name, maxLen, outputSize);
+
+    if (result != nullptr) {
+        for (int i = 0; i < outputSize; i++) {
+          printTextFromTop(result[i], EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+        }
+
+        delete[] result;
+    }
   }
 
   // draw one single line between all day and short events
@@ -161,8 +196,7 @@ void printCalendar()
   delay(100);
 }
 
-void printError() 
-{
+void printError() {
   display.begin();
   display.clearDisplay();
   display.setRotation(-1);
@@ -172,8 +206,7 @@ void printError()
   delay(100);
 }
 
-void setup() 
-{
+void setup() {
   Serial.begin(115200);
   Serial.println("Setup called");
   
@@ -190,13 +223,11 @@ void setup()
   Serial.println("success");
   Serial.println(success);
 
-  if (success)
-  {
+  if (success) {
     logEvents(); // for testing
     printCalendar();
   }
-  else
-  {
+  else {
     printError();
   }
 
@@ -216,15 +247,13 @@ void loop() {
 
 
 // ----- test functions for debugging -----
-void drawHelperLines() 
-{
+void drawHelperLines() {
   // helper lines for UI alignments - params: starting X, starting Y, length, color
   display.drawFastVLine(E_INK_WIDTH / 2, 0, E_INK_HEIGHT, BLACK);
   display.drawFastHLine(0, E_INK_HEIGHT / 2, E_INK_WIDTH, BLACK);
 }
 
-void logEvents() 
-{
+void logEvents() {
   Serial.println(currentTimestamp);
   Serial.println(sleepInMins);
   Serial.println();
@@ -240,8 +269,7 @@ void logEvents()
   }
 }
 
-void logEvent(calEvent event)
-{
+void logEvent(calEvent event) {
   Serial.print(F("Name: "));
   Serial.println(event.name);
   Serial.print(F("Is All Day Event: "));
