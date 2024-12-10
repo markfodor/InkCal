@@ -67,7 +67,7 @@ function buildResponseJson() {
     };
     const jsonString = JSON.stringify(respoonse); 
 
-    // Logger.log(jsonString); // uncomment this line for testing
+    Logger.log(jsonString);
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -75,8 +75,8 @@ function buildEventObject(event) {
   return { 
         "name": removeAccentsFromString(event.getTitle()),
         "allDayEvent" : event.isAllDayEvent(),
-        "startDate": Utilities.formatDate(event.getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
-        "endDate": Utilities.formatDate(event.getEndTime(), timeZone, timePattern)
+        "startTime": Utilities.formatDate(event.getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
+        "endTime": Utilities.formatDate(event.getEndTime(), timeZone, timePattern)
       }
 }
 
@@ -118,7 +118,8 @@ function getMinutesUntilMidnight(now) {
   const difference = midnight - now;
   return Math.floor(difference / (1000 * 60));
 }
- // used with date and time patterns as well
+
+// used with date and time patterns as well
 function getFormattedTimestamp(timeZone, format) {
   return Utilities.formatDate(new Date(), timeZone, format);
 }

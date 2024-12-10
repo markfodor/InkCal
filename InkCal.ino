@@ -35,8 +35,8 @@ int currentUiStep = 0;
 String currentTimestamp;
 int sleepInMins = 3600; // if error -> sleep for 6 hours
 typedef struct {
-    String startDate;    // (HH:MM)
-    String endDate;      // TODO rename these to ...Time
+    String startTime; // (HH:MM)
+    String endTime;
     String name;   // Summary or title of the event
     bool allDayEvent;
 } calEvent;
@@ -54,11 +54,9 @@ void handleWakeup() {
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0:
       Serial.println("Wakeup caused by external signal using RTC_IO"); 
-
       break;
     case ESP_SLEEP_WAKEUP_TIMER : 
       Serial.println("Wakeup caused by timer");
-
       break;
     default:
       Serial.printf("Unhandled wakeup. Reason: %d\n", wakeup_reason); 
@@ -91,15 +89,15 @@ bool processPayload(const String payload) {
     if(allDayEvent) {
       allDayEvents[allDayEventNumber].name = event["name"].as<String>();
       allDayEvents[allDayEventNumber].allDayEvent = event["allDayEvent"];
-      allDayEvents[allDayEventNumber].startDate = event["startDate"].as<String>();
-      allDayEvents[allDayEventNumber].endDate = event["endDate"].as<String>();
+      allDayEvents[allDayEventNumber].startTime = event["startTime"].as<String>();
+      allDayEvents[allDayEventNumber].endTime = event["endTime"].as<String>();
       allDayEventNumber++;
     }
     else {
       shortEvents[shortEventNumber].name = event["name"].as<String>();
       shortEvents[shortEventNumber].allDayEvent = event["allDayEvent"];
-      shortEvents[shortEventNumber].startDate = event["startDate"].as<String>();
-      shortEvents[shortEventNumber].endDate = event["endDate"].as<String>();
+      shortEvents[shortEventNumber].startTime = event["startTime"].as<String>();
+      shortEvents[shortEventNumber].endTime = event["endTime"].as<String>();
       shortEventNumber++;
     }
   }
@@ -187,10 +185,9 @@ void printCalendar() {
   display.drawThickLine(50, y, E_INK_HEIGHT - 50, y, BLACK, 2);
 
   for (int i = 0; i < shortEventNumber; i++) {
-    printTextFromTop(shortEvents[i].startDate + " - " + shortEvents[i].endDate, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    printTextFromTop(shortEvents[i].startTime + " - " + shortEvents[i].endTime, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
     printTextFromTop(shortEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
   }
-
 
   display.display();
   delay(100);
@@ -274,9 +271,9 @@ void logEvent(calEvent event) {
   Serial.println(event.name);
   Serial.print(F("Is All Day Event: "));
   Serial.println(event.allDayEvent ? "true" : "false");
-  Serial.print(F("Start Date: "));
-  Serial.println(event.startDate);
-  Serial.print(F("End Date: "));
-  Serial.println(event.endDate);
+  Serial.print(F("Start Time: "));
+  Serial.println(event.startTime);
+  Serial.print(F("End Time: "));
+  Serial.println(event.endTime);
   Serial.println();
 }
