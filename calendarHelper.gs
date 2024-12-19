@@ -15,7 +15,7 @@ function doGet(e) {
 
     const message = {"error": e.toString()}
     const jsonString = JSON.stringify(message);
-    Logger.log(jsonString);
+    Logger.log(jsonString); // uncomment this line for testing
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
   }
 }
@@ -67,7 +67,7 @@ function buildResponseJson() {
     };
     const jsonString = JSON.stringify(respoonse); 
 
-    Logger.log(jsonString);
+    Logger.log(jsonString); // uncomment this line for testing
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -95,7 +95,9 @@ function calculateDeepSleepInMins(events) {
   }
 
   const sleepInMins = (minsUntilMidnight < minsUntilNextEvent) ? minsUntilMidnight : minsUntilNextEvent;
-  return sleepInMins + 2; // add 2 mins to avoid race condition
+  // ESP timer is not precise if it needs to be in deep sleep for longer periods (especially on lower battery levels), it may wake up earlier
+  // 5 min plus eliminates the number of updates if ESP needs to refresh the screen when a short event has ended
+  return sleepInMins + 5;  
 }
 
 function getMinutesUntil(endDate, now) {

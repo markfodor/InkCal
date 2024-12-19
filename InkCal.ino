@@ -1,8 +1,3 @@
-// Next 3 lines are a precaution, you can ignore those, and the example would also work without them
-#ifndef ARDUINO_INKPLATE5
-#error "Wrong board selection for this example, please select Soldered Inkplate5 in the boards menu."
-#endif
-
 #include "Inkplate.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
@@ -167,7 +162,7 @@ void printCalendar() {
 
   for (int i = 0; i < allDayEventNumber; i++) {
     // split too long all-day events into multiple rows
-    const int maxLen = 30;       // Maximum length of each group --> TODO make it dynamic if possible
+    const int maxLen = 30;       // Maximum length of each group - works well on bigger screens too
     int outputSize = 0;          // Number of strings in the output array
     String* result = splitStringToArray(allDayEvents[i].name, maxLen, outputSize);
 
