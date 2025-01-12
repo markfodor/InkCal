@@ -2,15 +2,21 @@
 If you are into the micro-checkpoint lifestyle, then this tool is for you.
 This is an e-ink calendar to show your Google calendar for the day. It can sit on your desk and tell your next upcoming event anytime. :)
 
+![Refresh](git/refresh.gif)
+
 ## Features
 - It runs for months with a single charge
-- Able to display: invited and user-owned calendar events (all-day and short events)
+- Able to display invited and user-owned calendar events (all-day and short events)
 - It updates when your next upcoming event starts
 - Able to force-refresh if wake button is pushed - useful if you updated your Google Calendar and want to see the updates on the e-ink screen immediately
 
+![diagram](git/inkcal.jpg)
+![diagram](git/inkcals.jpg)
+
+
 ## How it Works
 
-TODO add images and description
+![diagram](git/sequence.jpg)
 
 ## Hardware
 It was initially designed on an [Inkplate 5](https://soldered.com/product/soldered-inkplate-5-gen2/) board but it can handle bigger Inkplate boards too. You can buy the board with 3D-printed enclosure and battery as well, so you do not have to thinker.
@@ -23,12 +29,12 @@ It was initially designed on an [Inkplate 5](https://soldered.com/product/solder
 ## How to set it up
 1. Use the 'calendarHelper.gs' file to set up a new Google App Script project
 2. Copy the content of the the script to a new [GoogleScript](https://script.google.com/) project
-3. Adjust the parameters at the top of the script
-4. Add "Calendar" service to the project. The editor may ask for authorization -> Allow
+3. Adjust the parameters at the top of the script (if you need to)
+4. Add "Calendar" service to the Google project. The editor may ask for authorization -> Allow
 5. Deploy the project. Create a real deployment, not just a 'test deployment'
 6. Copy the trigger URL after the deployment. It should appear after a successful deployment
-7. Test the request from a browser or other API testing tool, like Postman -> You should see your calendar events for the day with the correct timestamp
-8. Paste the URL to the NetworkConfig.h and setup the SSID and password for your WLAN connection
+7. Test the request from a browser or other API testing tool, like [Postman](https://www.postman.com/) -> You should see your calendar events for the day with the correct timestamp
+8. Paste the URL to the NetworkConfig.h and setup the SSID and password for WLAN connection
 9. Open the InkCal.ino with Arduino Studio
 10. Plug your Inkplate via USB and upload the code -> [InkPlate Getting started docs](https://inkplate.readthedocs.io/en/latest/get-started.html)
 11. Test it and adjust the config if needed

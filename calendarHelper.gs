@@ -67,7 +67,7 @@ function buildResponseJson() {
     };
     const jsonString = JSON.stringify(respoonse); 
 
-    Logger.log(jsonString); // uncomment this line for testing
+    Logger.log(jsonString);
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
 }
 
