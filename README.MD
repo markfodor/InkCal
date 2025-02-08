@@ -7,6 +7,7 @@ It is an e-ink calendar to show your Google calendar for the day. It can sit on 
 ## Features
 - **Long Battery Life:** The board can run for months on a single charge.
 - **Event Support:** It displays both user-owned and invited calendar events, including all-day and short events.
+- **Multi-Calendar Support:** It can pull events from multiple Google Calendars at the same time, keeping all your schedules in one place.
 - **Automatic Updates:** The screen refreshes automatically when one of your event ends.
 - **Manual Refresh:** Press the wake button to force a refresh—perfect for instantly updating the display after making changes to your Google Calendar.
 
@@ -72,18 +73,35 @@ From top to bottom:
 - Inkplate is not recognized. When it is correctly connected you should see some info about the board when clicking Tools -> Get Board Info
 - Logs do not appear in the Arduino IDE. Set the serial Monitor to 11520 baud
 
+### Troubleshooting
+ TODO
+
 ## FAQ
+Q: How can I add multiple calendars?
+
+A: Simply add another calendar by subscribing, creating, or importing it in the [Google Calendar web app](https://calendar.google.com/). As long as the calendar is selected, its events will also be displayed on the board.
+
+![Multi-Calendar support](assets/other_calendars.JPG)
+
+---
+
 Q: I have just updated my calendar but the changes are not reflected on the board. What to do?
 
 A: Just push the wake button on the board and it should trigger an immediate refresh
+
+---
 
 Q: Does it work on bigger InkPlate boards than Inkplate 5?
 
 A: Yes, the code can handle screen size changes responsively.
 
+---
+
 Q: How to use different date and time formats?
 
 A: Just change the constants at the top of the gs file.
+
+---
 
 Q: What do I need to change if I choose a bigger InkPlate board?
 
