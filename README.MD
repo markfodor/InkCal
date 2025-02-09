@@ -7,6 +7,7 @@ It is an e-ink calendar to show your Google calendar for the day. It can sit on 
 ## Features
 - **Long Battery Life:** The board can run for months on a single charge.
 - **Event Support:** It displays both user-owned and invited calendar events, including all-day and short events.
+- **Multi-Calendar Support:** It can pull events from multiple Google Calendars at the same time, keeping all your schedules in one place.
 - **Automatic Updates:** The screen refreshes automatically when one of your event ends.
 - **Manual Refresh:** Press the wake button to force a refresh—perfect for instantly updating the display after making changes to your Google Calendar.
 
@@ -72,18 +73,45 @@ From top to bottom:
 - Inkplate is not recognized. When it is correctly connected you should see some info about the board when clicking Tools -> Get Board Info
 - Logs do not appear in the Arduino IDE. Set the serial Monitor to 11520 baud
 
+### Troubleshooting
+If something isn’t working, here are a few things you can check:
+
+1. Let's first check if the Google Script is still accessible. Open the code you used to program the board and find the calendar URL in the NetworkConfig.h file—it should start with "https://script.google...".
+Copy the URL, paste it into your browser, and press **Enter**. After a few seconds, you should see a JSON response that begins with: ```{"date": ....```
+If you don’t get a response, it means the deployed Google Script isn't working or isn’t reachable. In that case, try redeploying the script and reprogramming the board with the new URL.
+
+2. If the Google Script is working correctly, you can check the board's logs for further troubleshooting.
+Open Arduino Studio and connect the board to your computer using a USB cable. Then, launch the Serial Monitor by going to Tools → Serial Monitor. Ensure that the correct port is selected (Tools → Port) and that the baud rate is set to 115200 in the corner.
+![Serial Monitor](assets/serial_monitor.jpg)
+Now, turn on the board—you should see logs appearing in the Serial Monitor, similar to this:
+``` Waiting for WiFi to connect....connected``` If the board is not able to connect, adjust you settings in the NetworkConfig.h file.
+
 ## FAQ
+Q: How can I add multiple calendars?
+
+A: Simply add another calendar by subscribing, creating, or importing it in the [Google Calendar web app](https://calendar.google.com/). As long as the calendar is selected, its events will also be displayed on the board.
+
+![Multi-Calendar support](assets/other_calendars.JPG)
+
+---
+
 Q: I have just updated my calendar but the changes are not reflected on the board. What to do?
 
 A: Just push the wake button on the board and it should trigger an immediate refresh
+
+---
 
 Q: Does it work on bigger InkPlate boards than Inkplate 5?
 
 A: Yes, the code can handle screen size changes responsively.
 
+---
+
 Q: How to use different date and time formats?
 
 A: Just change the constants at the top of the gs file.
+
+---
 
 Q: What do I need to change if I choose a bigger InkPlate board?
 

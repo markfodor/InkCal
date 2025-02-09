@@ -15,13 +15,15 @@ function doGet(e) {
 
     const message = {"error": e.toString()}
     const jsonString = JSON.stringify(message);
-    Logger.log(jsonString); // uncomment this line for testing
+    Logger.log(jsonString);
     return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 function buildResponseJson() {
-    const calendars = CalendarApp.getAllOwnedCalendars();
+    let calendars = CalendarApp.getAllCalendars();
+    // exclude hidden calendars and weather
+    calendars = calendars.filter(cal => !cal.isHidden() && cal.getTitle() != "Weather");
 
     if (calendars == undefined) {
       const error = "Can not access any calendar";
@@ -75,7 +77,7 @@ function buildEventObject(event) {
   return { 
         "name": removeAccentsFromString(event.getTitle()),
         "allDayEvent" : event.isAllDayEvent(),
-        "startTime": Utilities.formatDate(event.getStartTime(), timeZone, timePattern), // TODO rename these to startTime, endTime
+        "startTime": Utilities.formatDate(event.getStartTime(), timeZone, timePattern),
         "endTime": Utilities.formatDate(event.getEndTime(), timeZone, timePattern)
       }
 }
