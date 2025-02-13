@@ -14,6 +14,7 @@ String payload;
 int currentUiStep = 0;
 
 #define uS_TO_S_FACTOR 1000000 // Conversion factor for micro seconds to seconds
+#define MAX_CONNECTION_ATTEMPT 5 // number of connection tries will be attempted
 
 // UI variables
 #define DATE_TEXT_SIZE 2
@@ -206,20 +207,33 @@ void setup() {
 
   network.begin(ssid, pass);
   Serial.println("Getting data");
-  while (!network.getData(calendarURL, payload)) {
-    Serial.print('.');
-    delay(1000);
+
+  // TODO after x tries -> break from the while loop and print an error message
+  bool success = false;
+  int tries = 1;
+  while (!success || MAX_CONNECTION_ATTEMPT <= tries) {
+    success = network.getData(calendarURL, payload);
+    tries++;
+
+    if (!success) {
+      Serial.print('.');
+      delay(1000 * tries);
+    }
   }
 
-  bool success = processPayload(payload);
-  Serial.println("success");
-  Serial.println(success);
+  if () {
+    // TODO print error here
+  }
 
-  if (success) {
+  // TODO will be in an else block
+  bool payloadProcessed = processPayload(payload);
+  if (payloadProcessed) {
+    Serial.println("Payload processed");
     logEvents(); // for testing
     printCalendar();
   }
   else {
+    // TODO check this
     printError();
   }
 
