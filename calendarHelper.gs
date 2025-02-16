@@ -61,10 +61,12 @@ function buildResponseJson() {
       } 
     }
 
+    const calculatedObject = calculateDeepSleepInMinsAndDeepClean(events);
     const respoonse = {
       "date": getFormattedTimestamp(timeZone, dateFormatPattern),
       "time": getFormattedTimestamp(timeZone, timePattern),
-      "sleep": calculateDeepSleepInMins(events),
+      "sleep": calculatedObject.deepSleepMinutes,
+      "deepClean": calculatedObject.deepClean,
       "events": eventArray
     };
     const jsonString = JSON.stringify(respoonse); 
@@ -82,7 +84,7 @@ function buildEventObject(event) {
       }
 }
 
-function calculateDeepSleepInMins(events) {
+function calculateDeepSleepInMinsAndDeepClean(events) {
   const now = new Date();  // used for every calculation to eliminate elapsed time between calculations
   const minsUntilMidnight = getMinutesUntilMidnight(now);
   let minsUntilNextEvent = 99999;
@@ -97,9 +99,10 @@ function calculateDeepSleepInMins(events) {
   }
 
   const sleepInMins = (minsUntilMidnight < minsUntilNextEvent) ? minsUntilMidnight : minsUntilNextEvent;
+  const deepClean = (minsUntilMidnight < minsUntilNextEvent) ? true : false;  // deep clean will be performed at midnight
   // ESP timer is not precise if it needs to be in deep sleep for longer periods (especially on lower battery levels), it may wake up earlier
   // 5 min plus eliminates the number of updates if ESP needs to refresh the screen when a short event has ended
-  return sleepInMins + 5;  
+  return { deepSleepMinutes: sleepInMins + 5, deepClean: deepClean };  
 }
 
 function getMinutesUntil(endDate, now) {
