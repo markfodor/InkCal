@@ -42,6 +42,7 @@ From top to bottom:
 ![InkCal on InkPlate5](assets/inkcal_small.jpg)
 
 ## Limitations ⚠️
+- **Black & White Model Support Only:** The current codebase only supports black-and-white InkPlate models. Due to differences in method prototypes, it is not compatible with color displays.
 - **InkPlate 5 Display Limits:** The InkPlate 5 can show up to 5 short events and 8 all-day events. If a larger InkPlate board is used, this limit could increase. Don’t worry, though—you won’t miss anything, thanks to the dynamic updates! 😊
 - **Character Support:** Currently, only English characters are supported due to a limitation in the [Adafruit GFX library](https://github.com/adafruit/Adafruit-GFX-Library). Accented characters are stripped from the text. If this issue gets resolved, feel free to let me know, and I’ll look into it!
 - **Screen Update Timing:** Screen updates are delayed by 5 minutes after a short event ends. However, if the board has been in deep sleep for an extended period, there might be an extra update.
