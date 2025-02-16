@@ -10,6 +10,7 @@ It is an e-ink calendar to show your Google calendar for the day. It can sit on 
 - **Multi-Calendar Support:** It can pull events from multiple Google Calendars at the same time, keeping all your schedules in one place.
 - **Automatic Updates:** The screen refreshes automatically when one of your event ends.
 - **Manual Refresh:** Press the wake button to force a refresh—perfect for instantly updating the display after making changes to your Google Calendar.
+- **E-Ink Ghosting Prevention:** To maintain screen clarity, the board performs a deep clean every midnight, preventing ghosting effects on the e-ink display.
 - **Error Handling & Logging:** The board can display error messages on-screen and provides detailed logs for troubleshooting via the Serial Monitor.
 
 ![i-InkCals](assets/inkcals.jpg)
