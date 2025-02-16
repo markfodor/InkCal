@@ -10,6 +10,7 @@ It is an e-ink calendar to show your Google calendar for the day. It can sit on 
 - **Multi-Calendar Support:** It can pull events from multiple Google Calendars at the same time, keeping all your schedules in one place.
 - **Automatic Updates:** The screen refreshes automatically when one of your event ends.
 - **Manual Refresh:** Press the wake button to force a refresh—perfect for instantly updating the display after making changes to your Google Calendar.
+- **Error Handling & Logging:** The board can display error messages on-screen and provides detailed logs for troubleshooting via the Serial Monitor.
 
 ![i-InkCals](assets/inkcals.jpg)
 
@@ -76,11 +77,13 @@ From top to bottom:
 ### Troubleshooting
 If something isn’t working, here are a few things you can check:
 
-1. Let's first check if the Google Script is still accessible. Open the code you used to program the board and find the calendar URL in the NetworkConfig.h file—it should start with "https://script.google...".
+1. Let's first check if the board prints any error message. That should appear on the screen of the board.
+
+2. Check if the deployed Google Script is still accessible. Open the code you used to program the board and find the calendar URL in the NetworkConfig.h file—it should start with "https://script.google...".
 Copy the URL, paste it into your browser, and press **Enter**. After a few seconds, you should see a JSON response that begins with: ```{"date": ....```
 If you don’t get a response, it means the deployed Google Script isn't working or isn’t reachable. In that case, try redeploying the script and reprogramming the board with the new URL.
 
-2. If the Google Script is working correctly, you can check the board's logs for further troubleshooting.
+3. If the Google Script is working correctly, you can check the board's logs for further troubleshooting.
 Open Arduino Studio and connect the board to your computer using a USB cable. Then, launch the Serial Monitor by going to Tools → Serial Monitor. Ensure that the correct port is selected (Tools → Port) and that the baud rate is set to 115200 in the corner.
 ![Serial Monitor](assets/serial_monitor.jpg)
 Now, turn on the board—you should see logs appearing in the Serial Monitor, similar to this:
