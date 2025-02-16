@@ -27,10 +27,9 @@ Distributed as-is; no warranty is given.
 
 // All functions defined in Network.cpp
 
-class Network
-{
+class Network {
   public:
-    void begin(char *ssid, char *pass);
+    bool begin(char *ssid, char *pass);
     bool getData(char *calendarURL, String& payload);
     void setTimeInfo(int timezoneOffset);
     String getDate(String format);

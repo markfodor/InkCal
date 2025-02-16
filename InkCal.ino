@@ -14,7 +14,7 @@ String payload;
 int currentUiStep = 0;
 
 #define uS_TO_S_FACTOR 1000000 // Conversion factor for micro seconds to seconds
-#define MAX_CONNECTION_ATTEMPT 5 // number of connection tries will be attempted
+#define MAX_CONNECTION_ATTEMPT 5 // number of connection attempts
 
 // UI variables
 #define DATE_TEXT_SIZE 2
@@ -41,7 +41,7 @@ calEvent allDayEvents[MAX_ALL_DAY_EVENT_NUMBER];
 calEvent shortEvents[MAX_SHORT_EVENT_NUMBER];
 int shortEventNumber = 0;
 int allDayEventNumber = 0;
-String errorResponse = ""; // used for server errors and deserialization problems
+String errorMessage = ""; // used for errors on display (connection, server, deserialization problems)
 
 void handleWakeup() {
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -65,14 +65,14 @@ bool processPayload(const String payload) {
   DeserializationError error = deserializeJson(doc, payload);
   
   if (error) {
-    Serial.print("Parsing failed: ");
-    errorResponse = error.c_str();
-    Serial.println(errorResponse);
+    Serial.print("Client error - Parsing failed: ");
+    errorMessage = error.c_str();
     return false;
   }
 
   if (doc.containsKey("error")) {
-    errorResponse = doc["error"].as<String>();
+    Serial.print("Server error: ");
+    errorMessage = doc["error"].as<String>();
     return false;
   }
 
@@ -194,9 +194,46 @@ void printError() {
   display.clearDisplay();
   display.setRotation(-1);
   display.setTextSize(EVENT_TEXT_SIZE);
-  display.println(errorResponse);
+  display.println(errorMessage);
   display.display();
   delay(100);
+}
+
+bool connectToWlan() {
+  Serial.println("Connecting to WLAN");
+
+  bool connected = false;
+  int counter = 1;
+  while (!connected && counter <= MAX_CONNECTION_ATTEMPT) {
+    Serial.print("Attempt ");
+    Serial.println(counter);
+    connected = network.begin(ssid, pass);
+    ++counter;
+
+    if (!connected) {
+      delay(1000 * counter);
+    }
+  }
+
+  return connected;
+}
+
+bool requestData() {
+  Serial.println("Getting data");
+
+  bool dataArrived = false;
+  int tries = 1;
+  while (!dataArrived && tries <= MAX_CONNECTION_ATTEMPT) {
+    dataArrived = network.getData(calendarURL, payload);
+    ++tries;
+
+    if (!dataArrived) {
+      Serial.print('.');
+      delay(1000 * tries);
+    }
+  }
+
+  return dataArrived;
 }
 
 void setup() {
@@ -205,36 +242,34 @@ void setup() {
   
   handleWakeup();
 
-  network.begin(ssid, pass);
-  Serial.println("Getting data");
-
-  // TODO after x tries -> break from the while loop and print an error message
-  bool success = false;
-  int tries = 1;
-  while (!success || MAX_CONNECTION_ATTEMPT <= tries) {
-    success = network.getData(calendarURL, payload);
-    tries++;
-
-    if (!success) {
-      Serial.print('.');
-      delay(1000 * tries);
-    }
-  }
-
-  if () {
-    // TODO print error here
-  }
-
-  // TODO will be in an else block
-  bool payloadProcessed = processPayload(payload);
-  if (payloadProcessed) {
-    Serial.println("Payload processed");
-    logEvents(); // for testing
-    printCalendar();
+  bool wlanConnected = connectToWlan();
+  if (!wlanConnected) {
+    errorMessage = "Can NOT connect to WLAN network";
+    Serial.println(errorMessage);
+    printError();
   }
   else {
-    // TODO check this
-    printError();
+    Serial.println("Connected");
+
+    bool dataArrived = requestData();
+    if (!dataArrived) {
+      errorMessage = "Can NOT get data from Google";
+      Serial.println(errorMessage);
+      printError();
+    }
+    else {
+      // errorMessage is updated within 'processPayload'
+      bool payloadProcessed = processPayload(payload);
+      if (!payloadProcessed) {
+        Serial.println(errorMessage);
+        printError();
+      }
+      else {
+        Serial.println("Payload processed");
+        logEvents(); // for testing
+        printCalendar();
+      }
+    }
   }
 
   Serial.print("Going to sleep for ");
@@ -260,7 +295,9 @@ void drawHelperLines() {
 }
 
 void logEvents() {
+  Serial.print("Timestamp: ");
   Serial.println(currentTimestamp);
+  Serial.print("Sleep: ");
   Serial.println(sleepInMins);
   Serial.println();
 
@@ -276,13 +313,13 @@ void logEvents() {
 }
 
 void logEvent(calEvent event) {
-  Serial.print(F("Name: "));
+  Serial.print("Name: ");
   Serial.println(event.name);
-  Serial.print(F("Is All Day Event: "));
+  Serial.print("Is All Day Event: ");
   Serial.println(event.allDayEvent ? "true" : "false");
-  Serial.print(F("Start Time: "));
+  Serial.print("Start Time: ");
   Serial.println(event.startTime);
-  Serial.print(F("End Time: "));
+  Serial.print("End Time: ");
   Serial.println(event.endTime);
   Serial.println();
 }
