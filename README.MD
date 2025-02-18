@@ -132,8 +132,12 @@ const maxShortEventNumber = 5;
 ```
 These should match in the both code (on InkPlate and Google Script as well)
 
-## Contribution
-Any kind of positive contribution is welcome! Please help the project improve by opening an issue or a pull request with your suggested changes!
+## Contribution and Support ☕🚀
+Got ideas? Found a bug? Want to make this project even better? Open an issue or a pull request—I’d love to see what you’ve got!
+
+Feeling extra generous? You can fuel my coding sessions with a coffee (or three)! Every cup helps keep the project (and me) running. 
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/markfodor)
 
 ##  License
 This project is licensed under the Apache License 2.0.
