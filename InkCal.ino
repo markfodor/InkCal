@@ -30,6 +30,7 @@ int currentUiStep = 0;
 
 String currentTimestamp;
 int sleepInMins = 3600; // if error -> sleep for 6 hours
+bool deepClean = false; // if a deep clean is needed on the e-ink screen
 typedef struct {
     String startTime; // (HH:MM)
     String endTime;
@@ -42,6 +43,23 @@ calEvent shortEvents[MAX_SHORT_EVENT_NUMBER];
 int shortEventNumber = 0;
 int allDayEventNumber = 0;
 String errorMessage = ""; // used for errors on display (connection, server, deserialization problems)
+
+void deepClean() {
+  int cycles = 5;
+  while (cycles) {
+    display.clean(1, 21);
+    display.clean(2, 1);
+    display.clean(0, 12);
+    display.clean(2, 1);
+    display.clean(1, 21);
+    display.clean(2, 1);
+    display.clean(0, 12);
+    display.clean(2, 1);
+
+    delay(1000);
+    cycles--;
+  }
+}
 
 void handleWakeup() {
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -78,6 +96,7 @@ bool processPayload(const String payload) {
 
   currentTimestamp = doc["date"].as<String>() + " - " + doc["time"].as<String>();
   sleepInMins = doc["sleep"];
+  deepClean = doc["deepClean"];
   JsonArray payloadallDayEvents = doc["events"].as<JsonArray>();
   for (JsonObject event : payloadallDayEvents) {
     bool allDayEvent = event["allDayEvent"];
@@ -155,6 +174,10 @@ void printTextFromTop(String text, double textSize, int charWidth, int charHeigh
 void printCalendar() {
   display.begin();        // Init library (you should call this function ONLY ONCE)
   display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
+
+  if (deepClean) {
+    deepClean();
+  }
 
   // rotate display so the wake button is always up so user can easily refresh
   display.setRotation(-1);

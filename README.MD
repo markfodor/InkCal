@@ -10,6 +10,7 @@ It is an e-ink calendar to show your Google calendar for the day. It can sit on 
 - **Multi-Calendar Support:** It can pull events from multiple Google Calendars at the same time, keeping all your schedules in one place.
 - **Automatic Updates:** The screen refreshes automatically when one of your event ends.
 - **Manual Refresh:** Press the wake button to force a refresh—perfect for instantly updating the display after making changes to your Google Calendar.
+- **E-Ink Ghosting Prevention:** To maintain screen clarity, the board performs a deep clean every midnight, preventing ghosting effects on the e-ink display.
 - **Error Handling & Logging:** The board can display error messages on-screen and provides detailed logs for troubleshooting via the Serial Monitor.
 
 ![i-InkCals](assets/inkcals.jpg)
@@ -41,6 +42,7 @@ From top to bottom:
 ![InkCal on InkPlate5](assets/inkcal_small.jpg)
 
 ## Limitations ⚠️
+- **Black & White Model Support Only:** The current codebase only supports black-and-white InkPlate models. Due to differences in method prototypes, it is not compatible with color displays.
 - **InkPlate 5 Display Limits:** The InkPlate 5 can show up to 5 short events and 8 all-day events. If a larger InkPlate board is used, this limit could increase. Don’t worry, though—you won’t miss anything, thanks to the dynamic updates! 😊
 - **Character Support:** Currently, only English characters are supported due to a limitation in the [Adafruit GFX library](https://github.com/adafruit/Adafruit-GFX-Library). Accented characters are stripped from the text. If this issue gets resolved, feel free to let me know, and I’ll look into it!
 - **Screen Update Timing:** Screen updates are delayed by 5 minutes after a short event ends. However, if the board has been in deep sleep for an extended period, there might be an extra update.
@@ -130,8 +132,12 @@ const maxShortEventNumber = 5;
 ```
 These should match in the both code (on InkPlate and Google Script as well)
 
-## Contribution
-Any kind of positive contribution is welcome! Please help the project improve by opening an issue or a pull request with your suggested changes!
+## Contribution and Support ☕🚀
+Got ideas? Found a bug? Want to make this project even better? Open an issue or a pull request—I’d love to see what you’ve got!
+
+Feeling extra generous? You can fuel my coding sessions with a coffee (or three)! Every cup helps keep the project (and me) running. 
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/markfodor)
 
 ##  License
 This project is licensed under the Apache License 2.0.
