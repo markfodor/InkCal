@@ -44,7 +44,7 @@ int shortEventNumber = 0;
 int allDayEventNumber = 0;
 String errorMessage = ""; // used for errors on display (connection, server, deserialization problems)
 
-void deepClean() {
+void doDeepClean() {
   int cycles = 5;
   while (cycles) {
     display.clean(1, 21);
@@ -176,7 +176,7 @@ void printCalendar() {
   display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
 
   if (deepClean) {
-    deepClean();
+    doDeepClean();
   }
 
   // rotate display so the wake button is always up so user can easily refresh
