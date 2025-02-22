@@ -144,7 +144,8 @@ String* splitStringToArray(String input, int maxLen, int &outputSize) {
       // Add the word to the current group if it fits (add 1 for the space)
       if (!currentGroup.isEmpty()) currentGroup += " ";
       currentGroup += word;
-    } else {
+    } 
+    else {
       output[outputSize++] = currentGroup;
       currentGroup = word; // Start a new group with the current word
     }
@@ -203,9 +204,14 @@ void printCalendar() {
   int y = getNextUiStep();
   display.drawThickLine(50, y, E_INK_HEIGHT - 50, y, BLACK, 2);
 
-  for (int i = 0; i < shortEventNumber; i++) {
-    printTextFromTop(shortEvents[i].startTime + " - " + shortEvents[i].endTime, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
-    printTextFromTop(shortEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  if (shortEventNumber == 0) {
+    printTextFromTop("---", EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+  }
+  else {
+    for (int i = 0; i < shortEventNumber; i++) {
+      printTextFromTop(shortEvents[i].startTime + " - " + shortEvents[i].endTime, DATE_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+      printTextFromTop(shortEvents[i].name, EVENT_TEXT_SIZE, CHAR_WIDTH, CHAR_HEIGHT);
+    }
   }
 
   display.display();
