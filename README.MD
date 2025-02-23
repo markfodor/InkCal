@@ -106,6 +106,12 @@ A: Just push the wake button on the board and it should trigger an immediate ref
 
 ---
 
+Q: What does the "---" means?
+
+A: The three dashes means that you have no more events for the day.
+
+---
+
 Q: Does it work on bigger InkPlate boards than Inkplate 5?
 
 A: Yes, the code can handle screen size changes responsively.
@@ -120,7 +126,7 @@ A: Just change the constants at the top of the gs file.
 
 Q: What do I need to change if I choose a bigger InkPlate board?
 
-A: Nothing if you are okay with maximum 8 all-day events and 5 short events displayed on screen. If your board can handle more, just change the numbers in the ino file:
+A: Nothing, if you are okay with maximum 8 all-day events and 5 short events displayed on screen. If your board can handle more, just change the numbers in the ino file:
 ```
 #define MAX_ALL_DAY_EVENT_NUMBER 8
 #define MAX_SHORT_EVENT_NUMBER 5
