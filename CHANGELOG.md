@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0] - 2025-02-24
+
+### Added
+- Multi-Calendar Support [#6](https://github.com/markfodor/InkCal/issues/6)
+- E-Ink Ghosting Prevention [#11](https://github.com/markfodor/InkCal/issues/11)
+- "No more events today" marker [#5](https://github.com/markfodor/InkCal/issues/5)
+- Refined error handling and logging
+
+### Changed
+- Backoff strategy on network connections [#8](https://github.com/markfodor/InkCal/issues/8)
+
+
 ## [1.0.0] - 2025-01-19
 
 ### Added
