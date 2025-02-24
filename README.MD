@@ -48,7 +48,7 @@ From top to bottom:
 - **Screen Update Timing:** Screen updates are delayed by 5 minutes after a short event ends. However, if the board has been in deep sleep for an extended period, there might be an extra update.
 
 ## Setup
-1. Use the 'calendarHelper.gs' file to set up a new Google App Script project
+1. Use the 'server/calendarHelper.gs' file to set up a new Google App Script project
 2. Copy the content of the the script to a new [GoogleScript](https://script.google.com/) project
 3. Adjust the parameters at the top of the script (if you need to)
 4. Add "Calendar" service to the Google project. The editor may ask for authorization -> Allow
@@ -56,7 +56,7 @@ From top to bottom:
 6. Copy the trigger URL after the deployment. It should appear after a successful deployment
 7. Test the request from a browser or other API testing tool, like [Postman](https://www.postman.com/) -> You should see your calendar events for the day with the correct timestamp
 8. Paste the URL to the NetworkConfig.h and setup the SSID and password for WLAN connection
-9. Open the InkCal.ino with Arduino Studio
+9. Open the client/InkCal/InkCal.ino with Arduino Studio (Yes, it needs to be in a folder with the same name for the IDE to recognize every file)
 10. Plug your Inkplate via USB and upload the code -> [InkPlate Getting started docs](https://inkplate.readthedocs.io/en/latest/get-started.html)
 11. Test it and adjust the config if needed
 12. Enjoy ✨
