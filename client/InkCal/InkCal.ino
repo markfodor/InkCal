@@ -31,6 +31,7 @@ int currentUiStep = 0;
 String currentTimestamp;
 int sleepInMins = 3600; // if error -> sleep for 6 hours
 bool deepClean = false; // if a deep clean is needed on the e-ink screen
+bool wakeButtonPressed = false;
 typedef struct {
     String startTime; // (HH:MM)
     String endTime;
@@ -59,6 +60,8 @@ void doDeepClean() {
     delay(1000);
     cycles--;
   }
+
+  Serial.print("Deep clean is done");
 }
 
 void handleWakeup() {
@@ -67,7 +70,8 @@ void handleWakeup() {
 
   switch(wakeup_reason) {
     case ESP_SLEEP_WAKEUP_EXT0:
-      Serial.println("Wakeup caused by external signal using RTC_IO"); 
+      wakeButtonPressed = true;
+      Serial.println("Wakeup caused by external signal using RTC_IO");
       break;
     case ESP_SLEEP_WAKEUP_TIMER : 
       Serial.println("Wakeup caused by timer");
@@ -176,7 +180,8 @@ void printCalendar() {
   display.begin();        // Init library (you should call this function ONLY ONCE)
   display.clearDisplay(); // Clear any data that may have been in (software) frame buffer.
 
-  if (deepClean) {
+  // skip deep clean when wake button pressed
+  if (!wakeButtonPressed && deepClean) {
     doDeepClean();
   }
 

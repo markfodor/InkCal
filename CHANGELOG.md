@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.1.1] - 2025-03-02
+
+### Fixed
+- Deep clean when wake button is pressed and no event for the day [#23](https://github.com/markfodor/InkCal/issues/23)
+
 ## [1.1.0] - 2025-02-24
 
 ### Added
